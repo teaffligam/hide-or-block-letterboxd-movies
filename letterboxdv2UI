@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name        Hide Movies by Title on Letterboxd with X Button
 // @namespace   http://tampermonkey.net/
-// @version     3.0
-// @description Add an X button to movies on Letterboxd; view/edit hidden titles with button; persistent hidden titles; custom backup list.
+// @version     3.3
+// @description Add an X button to movies on Letterboxd; view/edit hidden titles with button; persistent hidden titles; custom backup list. Optimized for performance.
 // @author      Your Name
 // @match       https://letterboxd.com/*
 // @grant       GM_setValue
@@ -14,38 +14,28 @@
 
     // *** CUSTOM BACKUP LIST (EDIT THIS ARRAY DIRECTLY) ***
     const customHiddenTitlesBackup = [
-        // Add your backup titles here, e.g.:
         'The Shawshank Redemption',
         'The Godfather',
         'The Dark Knight',
         '12 Angry Men',
-        'Schindler\'s List'
+        'Schindler\'s List',
+        // ... Add your other titles here
     ];
 
     let hiddenTitles = [];
 
-    // Load from persistent storage FIRST
     const storedTitles = GM_getValue('hiddenTitles', []);
-
-    // Add titles from the custom backup list that are NOT already in storage
-    customHiddenTitlesBackup.forEach(title => {
-        if (!storedTitles.includes(title)) {
-            hiddenTitles.push(title);
-        }
-    });
-
-    // Concatenate the stored titles to the hiddenTitles array
+    customHiddenTitlesBackup.forEach(title => { if (!storedTitles.includes(title)) hiddenTitles.push(title); });
     hiddenTitles = hiddenTitles.concat(storedTitles);
-
-    // Remove duplicates (important if a title is in both lists)
     hiddenTitles = [...new Set(hiddenTitles)];
 
-    function saveHiddenTitles() {
-        GM_setValue('hiddenTitles', hiddenTitles);
-    }
+    function saveHiddenTitles() { GM_setValue('hiddenTitles', hiddenTitles); }
 
     function addXButton(item) {
+        if (item.querySelector('.x-button')) return;
+
         const xButton = document.createElement('span');
+        xButton.classList.add('x-button');
         xButton.innerHTML = '×';
         xButton.style.cssText = `
             position: absolute;
@@ -84,28 +74,26 @@
         movieItems.forEach(item => {
             const movieTitle = item.querySelector('.react-component.poster')?.getAttribute('data-film-name')?.toLowerCase();
             if (movieTitle) {
-                if (hiddenTitles.includes(movieTitle)) {
-                    item.style.display = 'none';
-                } else {
+                item.style.display = hiddenTitles.includes(movieTitle) ? 'none' : '';
+                if (!hiddenTitles.includes(movieTitle) && !item.querySelector('.x-button')) {
                     addXButton(item);
                 }
             }
         });
     }
 
-    function debounce(func, delay) {
-        let timeout;
-        return function() {
-            const context = this;
-            const args = arguments;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), delay);
-        };
+    let debounceTimeout;
+    function debouncedHideMovies() {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            if (document.readyState === 'complete') {
+                hideMovies();
+            }
+        }, 100);
     }
 
-    const debouncedHideMovies = debounce(hideMovies, 250);
-
     debouncedHideMovies();
+
     const observer = new MutationObserver(debouncedHideMovies);
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -154,7 +142,8 @@
                 return;
             }
 
-            const formattedTitles = hiddenTitles.map(title => `'${title}'`).join(',');
+            const formattedTitles = hiddenTitles.map(title => `'${title.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`).join(',');
+
             textArea = document.createElement('textarea');
             textArea.value = formattedTitles;
             textArea.style.cssText = `
