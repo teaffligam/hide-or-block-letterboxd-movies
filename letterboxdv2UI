@@ -1,0 +1,184 @@
+// ==UserScript==
+// @name        Hide Movies by Title on Letterboxd with X Button
+// @namespace   http://tampermonkey.net/
+// @version     3.0
+// @description Add an X button to movies on Letterboxd; view/edit hidden titles with button; persistent hidden titles; custom backup list.
+// @author      Your Name
+// @match       https://letterboxd.com/*
+// @grant       GM_setValue
+// @grant       GM_getValue
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // *** CUSTOM BACKUP LIST (EDIT THIS ARRAY DIRECTLY) ***
+    const customHiddenTitlesBackup = [
+        // Add your backup titles here, e.g.:
+        'The Shawshank Redemption',
+        'The Godfather',
+        'The Dark Knight',
+        '12 Angry Men',
+        'Schindler\'s List'
+    ];
+
+    let hiddenTitles = [];
+
+    // Load from persistent storage FIRST
+    const storedTitles = GM_getValue('hiddenTitles', []);
+
+    // Add titles from the custom backup list that are NOT already in storage
+    customHiddenTitlesBackup.forEach(title => {
+        if (!storedTitles.includes(title)) {
+            hiddenTitles.push(title);
+        }
+    });
+
+    // Concatenate the stored titles to the hiddenTitles array
+    hiddenTitles = hiddenTitles.concat(storedTitles);
+
+    // Remove duplicates (important if a title is in both lists)
+    hiddenTitles = [...new Set(hiddenTitles)];
+
+    function saveHiddenTitles() {
+        GM_setValue('hiddenTitles', hiddenTitles);
+    }
+
+    function addXButton(item) {
+        const xButton = document.createElement('span');
+        xButton.innerHTML = '×';
+        xButton.style.cssText = `
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            color: red;
+            font-size: 20px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            pointer-events: auto;
+        `;
+
+        xButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const movieTitle = item.querySelector('.react-component.poster')?.getAttribute('data-film-name')?.toLowerCase();
+            if (movieTitle && !hiddenTitles.includes(movieTitle)) {
+                hiddenTitles.push(movieTitle);
+                saveHiddenTitles();
+                item.style.display = 'none';
+                console.log(`Added "${movieTitle}" to the hide list:`, hiddenTitles);
+            }
+        });
+
+        item.style.position = 'relative';
+        item.appendChild(xButton);
+    }
+
+    function hideMovies() {
+        const movieItems = document.querySelectorAll('li.listitem.poster-container, li.poster-container');
+        movieItems.forEach(item => {
+            const movieTitle = item.querySelector('.react-component.poster')?.getAttribute('data-film-name')?.toLowerCase();
+            if (movieTitle) {
+                if (hiddenTitles.includes(movieTitle)) {
+                    item.style.display = 'none';
+                } else {
+                    addXButton(item);
+                }
+            }
+        });
+    }
+
+    function debounce(func, delay) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
+    const debouncedHideMovies = debounce(hideMovies, 250);
+
+    debouncedHideMovies();
+    const observer = new MutationObserver(debouncedHideMovies);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    function createViewButton() {
+        const viewButton = document.createElement('button');
+        viewButton.textContent = 'View/Edit & Save Hidden Titles';
+        viewButton.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        `;
+
+        let textArea = null;
+
+        viewButton.addEventListener('click', () => {
+            if (textArea) {
+                const newTitlesString = textArea.value;
+                let newHiddenTitles = [];
+
+                try {
+                    newHiddenTitles = JSON.parse('[' + newTitlesString + ']');
+                } catch (jsonError) {
+                    try {
+                        newHiddenTitles = newTitlesString.split(',').map(item => item.trim().replace(/'/g, ''));
+                    } catch (splitError){
+                        alert("Invalid format. Please use format like 'title1','title2' or [ 'title1', 'title2']");
+                        return;
+                    }
+
+                }
+
+                hiddenTitles = newHiddenTitles;
+                saveHiddenTitles();
+                alert("Hidden Titles saved!");
+                hideMovies();
+
+                document.body.removeChild(textArea);
+                textArea = null;
+                viewButton.textContent = 'View/Edit & Save Hidden Titles';
+                return;
+            }
+
+            const formattedTitles = hiddenTitles.map(title => `'${title}'`).join(',');
+            textArea = document.createElement('textarea');
+            textArea.value = formattedTitles;
+            textArea.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 10000;
+                width: 80%;
+                height: 50%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                font-family: monospace;
+                resize: none;
+            `;
+            document.body.appendChild(textArea);
+            textArea.select();
+            viewButton.textContent = 'Save & Close';
+
+        });
+
+        document.body.appendChild(viewButton);
+    }
+
+    createViewButton();
+
+})();
