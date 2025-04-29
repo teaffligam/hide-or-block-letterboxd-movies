@@ -14,11 +14,7 @@
 
     // *** CUSTOM BACKUP LIST (EDIT THIS ARRAY DIRECTLY) ***
     const customHiddenTitlesBackup = [
-        'The Shawshank Redemption',
-        'The Godfather',
-        'The Dark Knight',
-        '12 Angry Men',
-        'Schindler\'s List',
+'Schindler\'s List','you\'re cordially invited','The Shawshank Redemption','The Godfather','The Dark Knight','12 Angry Men','Schindler\\s List','anora','conclave','babygirl','a real pain','a complete unknown','emilia pérez','we live in time','wicked','blink twice','flow','queer','the wild robot','parasite','you\\re cordially invited','the menu','how to lose a guy in 10 days','the order','eternal sunshine of the spotless mind','vidaamuyarchi','sing sing','the girl with the needle','la la land','whiplash','wallace & gromit: vengeance most fowl','(500) days of summer','a different man','10 things i hate about you','dog man','the apprentice','sonic the hedgehog 3','the notebook','shrek','juror #2','memoir of a snail','paddington in peru','nickel boys','fight club','past lives','twilight','shrek 2','pearl','bridget jones\'s diary','back in action','moana 2','beautiful boy','little miss sunshine','i saw the tv glow','the devil wears prada','barbie','spider-man: no way home','civil war','notting hill','the truman show','black swan','grave of the fireflies','twin peaks: fire walk with me','before sunrise','maxxxine','mufasa: the lion king','inside out 2','spirited away','little women','fantastic mr. fox','in the mood for love','crazy, stupid, love.','pride & prejudice','spider-man: into the spider-verse','saltburn','howl\'s moving castle','oppenheimer','the social network','django unchained','the lord of the rings: the fellowship of the ring','to all the boys i\'ve loved before','the virgin suicides','shiva baby','gone girl','spider-man: across the spider-verse','the wolf of wall street','carry-on','mamma mia!'
         // ... Add your other titles here
     ];
 
