@@ -5,6 +5,7 @@
 // @description Add an X button to movies on Letterboxd; view/edit hidden titles with button; persistent hidden titles; custom backup list. Optimized for performance.
 // @author      Your Name
 // @match       https://letterboxd.com/*
+// @icon         https://letterboxd.com/favicon.ico
 // @grant       GM_setValue
 // @grant       GM_getValue
 // ==/UserScript==
